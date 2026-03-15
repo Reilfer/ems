@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(200)
+  code      String   @unique @db.VarChar(50)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  exams Exam[]
+
+  @@map("schools")
+}
+
+model Subject {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(100)
+  code      String   @unique @db.VarChar(20)
+  category  String?  @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  questionBanks QuestionBank[]
+
+  @@map("subjects")
+}
+
+model QuestionBank {
+  id        String   @id @default(uuid()) @db.Uuid
+  subjectId String   @map("subject_id") @db.Uuid
+  name      String   @db.VarChar(200)
+  grade     Int
+  createdBy String?  @map("created_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  subject   Subject    @relation(fields: [subjectId], references: [id])
+  questions Question[]
+
+  @@map("question_banks")
+}
+
+model Question {
+  id         String @id @default(uuid()) @db.Uuid
+  bankId     String @map("bank_id") @db.Uuid
+  type       String @db.VarChar(20)
+  content    String @db.Text
+  options    Json?  @default("[]")
+  answer     String @db.Text
+  points     Float  @default(1)
+  difficulty String @default("MEDIUM") @db.VarChar(20)
+
+  bank QuestionBank @relation(fields: [bankId], references: [id])
+
+  @@map("questions")
+}
+
+model Exam {
+  id          String    @id @default(uuid()) @db.Uuid
+  schoolId    String    @map("school_id") @db.Uuid
+  title       String    @db.VarChar(255)
+  subjectName String?   @map("subject_name") @db.VarChar(100)
+  duration    Int
+  totalPoints Float     @map("total_points")
+  questions   Json      @default("[]")
+  status      String    @default("DRAFT") @db.VarChar(20)
+  startTime   DateTime? @map("start_time")
+  endTime     DateTime? @map("end_time")
+  createdBy   String?   @map("created_by") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  school   School        @relation(fields: [schoolId], references: [id])
+  attempts ExamAttempt[]
+
+  @@map("exams")
+}
+
+model ExamAttempt {
+  id          String    @id @default(uuid()) @db.Uuid
+  examId      String    @map("exam_id") @db.Uuid
+  studentId   String    @map("student_id") @db.Uuid
+  studentName String?   @map("student_name") @db.VarChar(200)
+  answers     Json      @default("{}")
+  score       Float?
+  startedAt   DateTime  @default(now()) @map("started_at")
+  submittedAt DateTime? @map("submitted_at")
+
+  exam Exam @relation(fields: [examId], references: [id])
+
+  @@map("exam_attempts")
+}

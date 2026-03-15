@@ -1,0 +1,584 @@
+// =============================================
+// ReilferEDUV - Prisma Schema (SQLite Version for Mobile/Termux)
+// =============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// === SCHOOLS ===
+model School {
+  id                    String    @id @default(uuid())
+  name                  String
+  code                  String    @unique
+  address               String?
+  phone                 String?
+  email                 String?
+  logoUrl               String?   @map("logo_url")
+  subscriptionPlan      String    @default("free") @map("subscription_plan")
+  subscriptionExpiresAt DateTime? @map("subscription_expires_at")
+  maxStudents           Int       @default(100) @map("max_students")
+  maxTeachers           Int       @default(20) @map("max_teachers")
+  settings              String    @default("{}") // SQLite stores JSON as String
+  isActive              Boolean   @default(true) @map("is_active")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  users          User[]
+  students       Student[]
+  teachers       Teacher[]
+  classes        Class[]
+  academicYears  AcademicYear[]
+  gradeLevels    GradeLevel[]
+  subjects       Subject[]
+  scores         Score[]
+  invoices       Invoice[]
+  notifications  Notification[]
+  contracts      Contract[]
+  payrolls       Payroll[]
+  questionBanks  QuestionBank[]
+  crmLeads       CrmLead[]
+  homework       Homework[]
+  leaveRequests  LeaveRequest[]
+
+  @@map("schools")
+}
+
+// === USERS ===
+model User {
+  id                  String    @id @default(uuid())
+  schoolId            String    @map("school_id")
+  email               String
+  phone               String?
+  passwordHash        String    @map("password_hash")
+  firstName           String    @map("first_name")
+  lastName            String    @map("last_name")
+  avatarUrl           String?   @map("avatar_url")
+  role                String
+  status              String    @default("active")
+  twoFactorEnabled    Boolean   @default(false) @map("two_factor_enabled")
+  twoFactorSecret     String?   @map("two_factor_secret")
+  lastLogin           DateTime? @map("last_login")
+  passwordChangedAt   DateTime? @map("password_changed_at")
+  failedLoginAttempts Int       @default(0) @map("failed_login_attempts")
+  lockedUntil         DateTime? @map("locked_until")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  school              School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacherProfile      Teacher?
+  attendanceSessions  AttendanceSession[]
+  notifications       Notification[] @relation("recipient")
+  sentNotifications   Notification[] @relation("sender")
+  contracts           Contract[]
+  payrolls            Payroll[]
+  homeworkCreated     Homework[] @relation("homeworkTeacher")
+  leaveRequests       LeaveRequest[] @relation("user_leave_requests")
+  reviewedLeaves      LeaveRequest[] @relation("reviewer_leave_requests")
+
+  @@unique([schoolId, email])
+  @@index([schoolId])
+  @@map("users")
+}
+
+// === ACADEMIC YEARS ===
+model AcademicYear {
+  id        String   @id @default(uuid())
+  schoolId  String   @map("school_id")
+  name      String
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  isCurrent Boolean  @default(false) @map("is_current")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classes   Class[]
+  scores    Score[]
+  invoices  Invoice[]
+
+  @@map("academic_years")
+}
+
+// === GRADE LEVELS ===
+model GradeLevel {
+  id          String   @id @default(uuid())
+  schoolId    String   @map("school_id")
+  name        String
+  level       Int
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  school      School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classes     Class[]
+  subjects    Subject[]
+
+  @@map("grade_levels")
+}
+
+// === CLASSES ===
+model Class {
+  id                String   @id @default(uuid())
+  schoolId          String   @map("school_id")
+  academicYearId    String   @map("academic_year_id")
+  gradeLevelId      String   @map("grade_level_id")
+  name              String
+  homeroomTeacherId String?  @map("homeroom_teacher_id")
+  maxStudents       Int      @default(45) @map("max_students")
+  room              String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  school            School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  academicYear      AcademicYear @relation(fields: [academicYearId], references: [id])
+  gradeLevel        GradeLevel   @relation(fields: [gradeLevelId], references: [id])
+  students          Student[]
+  attendanceSessions AttendanceSession[]
+  scores            Score[]
+  timetableSlots    TimetableSlot[]
+  homework          Homework[]
+
+  @@index([schoolId, academicYearId])
+  @@map("classes")
+}
+
+// === STUDENTS ===
+model Student {
+  id              String   @id @default(uuid())
+  schoolId        String   @map("school_id")
+  userId          String?  @map("user_id")
+  studentCode     String   @map("student_code")
+  firstName       String   @map("first_name")
+  lastName        String   @map("last_name")
+  dateOfBirth     DateTime? @map("date_of_birth")
+  gender          String?
+  address         String?
+  phone           String?
+  email           String?
+  avatarUrl       String?  @map("avatar_url")
+  currentClassId  String?  @map("current_class_id")
+  enrollmentDate  DateTime @default(now()) @map("enrollment_date")
+  status          String   @default("active")
+  parentIds       String   @map("parent_ids") // SQLite stores array as String
+  medicalNotes    String?  @map("medical_notes")
+  faceEncoding    Bytes?   @map("face_encoding")
+  metadata        String   @default("{}") // SQLite stores JSON as String
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  school          School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  currentClass    Class?   @relation(fields: [currentClassId], references: [id])
+  attendanceRecords AttendanceRecord[]
+  scores          Score[]
+  invoices        Invoice[]
+  leaveRequests   LeaveRequest[]
+  homeworkSubmissions HomeworkSubmission[]
+
+  @@unique([schoolId, studentCode])
+  @@index([schoolId])
+  @@index([currentClassId])
+  @@map("students")
+}
+
+// === TEACHERS ===
+model Teacher {
+  id              String   @id @default(uuid())
+  schoolId        String   @map("school_id")
+  userId          String   @unique @map("user_id")
+  teacherCode     String   @map("teacher_code")
+  specialization  String?
+  qualification   String?
+  hireDate        DateTime? @map("hire_date")
+  department      String?
+  status          String   @default("active")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  school          School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id])
+  timetableSlots  TimetableSlot[]
+
+  @@unique([schoolId, teacherCode])
+  @@index([schoolId])
+  @@map("teachers")
+}
+
+// === SUBJECTS ===
+model Subject {
+  id           String   @id @default(uuid())
+  schoolId     String   @map("school_id")
+  name         String
+  code         String
+  description  String?
+  gradeLevelId String?  @map("grade_level_id")
+  credits      Decimal  @default(1.0)
+  subjectType  String   @default("required") @map("subject_type")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  school       School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  gradeLevel   GradeLevel? @relation(fields: [gradeLevelId], references: [id])
+  scores       Score[]
+  attendanceSessions AttendanceSession[]
+  questionBanks      QuestionBank[]
+  timetableSlots     TimetableSlot[]
+  homework           Homework[]
+
+  @@unique([schoolId, code])
+  @@map("subjects")
+}
+
+// === ATTENDANCE SESSIONS ===
+model AttendanceSession {
+  id          String   @id @default(uuid())
+  schoolId    String   @map("school_id")
+  classId     String   @map("class_id")
+  teacherId   String   @map("teacher_id")
+  sessionDate DateTime @default(now()) @map("session_date")
+  period      Int?
+  subjectId   String?  @map("subject_id")
+  type        String   @default("manual")
+  status      String   @default("open")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  class       Class    @relation(fields: [classId], references: [id])
+  teacher     User     @relation(fields: [teacherId], references: [id])
+  subject     Subject? @relation(fields: [subjectId], references: [id])
+  records     AttendanceRecord[]
+
+  @@unique([classId, sessionDate, period])
+  @@index([classId, sessionDate])
+  @@map("attendance_sessions")
+}
+
+// === ATTENDANCE RECORDS ===
+model AttendanceRecord {
+  id          String    @id @default(uuid())
+  sessionId   String    @map("session_id")
+  studentId   String    @map("student_id")
+  status      String
+  checkInTime DateTime? @map("check_in_time")
+  note        String?
+  markedBy    String?   @map("marked_by")
+  method      String    @default("manual")
+  confidence  Decimal?
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  session     AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student     Student           @relation(fields: [studentId], references: [id])
+
+  @@unique([sessionId, studentId])
+  @@map("attendance_records")
+}
+
+// === SCORES ===
+model Score {
+  id             String   @id @default(uuid())
+  schoolId       String   @map("school_id")
+  studentId      String   @map("student_id")
+  subjectId      String   @map("subject_id")
+  classId        String   @map("class_id")
+  academicYearId String   @map("academic_year_id")
+  semester       Int
+  scoreType      String   @map("score_type")
+  score          Decimal
+  weight         Decimal  @default(1.0)
+  gradedBy       String?  @map("graded_by")
+  note           String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  school         School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student        Student      @relation(fields: [studentId], references: [id])
+  subject        Subject      @relation(fields: [subjectId], references: [id])
+  class          Class        @relation(fields: [classId], references: [id])
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  @@index([studentId, subjectId, academicYearId])
+  @@index([classId, subjectId, semester])
+  @@map("scores")
+}
+
+// === INVOICES ===
+model Invoice {
+  id              String   @id @default(uuid())
+  schoolId        String   @map("school_id")
+  invoiceNumber   String   @map("invoice_number")
+  studentId       String   @map("student_id")
+  academicYearId  String   @map("academic_year_id")
+  semester        Int?
+  totalAmount     Decimal  @map("total_amount")
+  discountAmount  Decimal  @default(0) @map("discount_amount")
+  finalAmount     Decimal  @map("final_amount")
+  status          String   @default("pending")
+  dueDate         DateTime @map("due_date")
+  issuedDate      DateTime @default(now()) @map("issued_date")
+  paidDate        DateTime? @map("paid_date")
+  description     String?
+  items           String   @default("[]") // SQLite stores JSON as String
+  createdBy       String?  @map("created_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  school          School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student         Student      @relation(fields: [studentId], references: [id])
+  academicYear    AcademicYear @relation(fields: [academicYearId], references: [id])
+  payments        Payment[]
+
+  @@unique([schoolId, invoiceNumber])
+  @@index([studentId, status])
+  @@index([schoolId, status])
+  @@map("invoices")
+}
+
+// === PAYMENTS ===
+model Payment {
+  id              String    @id @default(uuid())
+  schoolId        String    @map("school_id")
+  invoiceId       String    @map("invoice_id")
+  amount          Decimal
+  method          String
+  transactionId   String?   @map("transaction_id")
+  gatewayResponse String    @default("{}") // SQLite stores JSON as String
+  status          String    @default("pending")
+  paidAt          DateTime? @map("paid_at")
+  note            String?
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  invoice         Invoice   @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+// === NOTIFICATIONS ===
+model Notification {
+  id          String   @id @default(uuid())
+  schoolId    String   @map("school_id")
+  senderId    String?  @map("sender_id")
+  recipientId String   @map("recipient_id")
+  type        String
+  title       String
+  content     String
+  data        String   @default("{}") // SQLite stores JSON as String
+  channels    String   @default("[\"in_app\"]") // SQLite stores Array as String
+  isRead      Boolean  @default(false) @map("is_read")
+  readAt      DateTime? @map("read_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  sender      User?    @relation("sender", fields: [senderId], references: [id])
+  recipient   User     @relation("recipient", fields: [recipientId], references: [id])
+
+  @@index([recipientId, isRead])
+  @@index([schoolId])
+  @@map("notifications")
+}
+
+// === LEAVE REQUESTS ===
+model LeaveRequest {
+  id            String    @id @default(uuid())
+  schoolId      String    @map("school_id")
+  type          String    @default("student") // 'student' or 'staff'
+  studentId     String?   @map("student_id")
+  userId        String?   @map("user_id")
+  requestedBy   String    @map("requested_by")
+  startDate     DateTime  @map("start_date")
+  endDate       DateTime  @map("end_date")
+  reason        String
+  attachmentUrl String?   @map("attachment_url")
+  status        String    @default("pending")
+  reviewedBy    String?   @map("reviewed_by")
+  reviewedAt    DateTime? @map("reviewed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  school        School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  student       Student?  @relation(fields: [studentId], references: [id])
+  user          User?     @relation("user_leave_requests", fields: [userId], references: [id])
+  reviewer      User?     @relation("reviewer_leave_requests", fields: [reviewedBy], references: [id])
+
+  @@index([studentId, status])
+  @@index([userId, status])
+  @@index([schoolId])
+  @@map("leave_requests")
+}
+
+// === HR & CONTRACTS ===
+model Contract {
+  id             String    @id @default(uuid())
+  schoolId       String    @map("school_id")
+  userId         String    @map("user_id")
+  contractNumber String    @map("contract_number")
+  type           String
+  startDate      DateTime  @map("start_date")
+  endDate        DateTime? @map("end_date")
+  baseSalary     Decimal   @map("base_salary")
+  status         String    @default("active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  school         School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id])
+
+  @@unique([schoolId, contractNumber])
+  @@index([userId])
+  @@map("contracts")
+}
+
+model Payroll {
+  id          String   @id @default(uuid())
+  schoolId    String   @map("school_id")
+  userId      String   @map("user_id")
+  month       Int
+  year        Int
+  baseSalary  Decimal  @map("base_salary")
+  bonus       Decimal  @default(0)
+  deduction   Decimal  @default(0)
+  netSalary   Decimal  @map("net_salary")
+  status      String   @default("pending")
+  paidAt      DateTime? @map("paid_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([schoolId, userId, month, year])
+  @@map("payroll")
+}
+
+// === EXAMS & QUESTIONS ===
+model QuestionBank {
+  id            String   @id @default(uuid())
+  schoolId      String   @map("school_id")
+  subjectId     String   @map("subject_id")
+  name          String
+  gradeLevel    Int?     @map("grade_level")
+  questionCount Int      @default(0) @map("question_count")
+  isPublic      Boolean  @default(false) @map("is_public")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  school        School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  subject       Subject  @relation(fields: [subjectId], references: [id])
+  questions     Question[]
+
+  @@map("question_banks")
+}
+
+model Question {
+  id            String   @id @default(uuid())
+  bankId        String   @map("bank_id")
+  content       String
+  type          String // multiple_choice, essay, true_false
+  difficulty    String   @default("medium")
+  options       String?  @default("[]") // SQLite stores JSON as String
+  correctAnswer String?  @map("correct_answer")
+  points        Decimal  @default(1.0)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  bank          QuestionBank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  @@index([bankId])
+  @@map("questions")
+}
+
+// === CRM & ADMISSIONS ===
+model CrmLead {
+  id          String   @id @default(uuid())
+  schoolId    String   @map("school_id")
+  parentName  String   @map("parent_name")
+  phone       String
+  email       String?
+  studentName String?  @map("student_name")
+  status      String   @default("new") // new, contacted, interested, applied, enrolled
+  source      String?
+  note        String?
+  assignedTo  String?  @map("assigned_to")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@index([schoolId, status])
+  @@index([phone])
+  @@map("crm_leads")
+}
+
+// === TIMETABLE ===
+model TimetableSlot {
+  id        String  @id @default(uuid())
+  schoolId  String  @map("school_id")
+  classId   String  @map("class_id")
+  subjectId String  @map("subject_id")
+  teacherId String  @map("teacher_id")
+  dayOfWeek Int     @map("day_of_week")
+  period    Int
+  room      String?
+
+  class     Class   @relation(fields: [classId], references: [id])
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+
+  @@index([schoolId])
+  @@map("timetable_slots")
+}
+
+// === HOMEWORK ===
+model Homework {
+  id           String   @id @default(uuid())
+  schoolId     String   @map("school_id")
+  classId      String   @map("class_id")
+  subjectId    String   @map("subject_id")
+  teacherId    String   @map("teacher_id")
+  title        String
+  description  String?
+  type         String   // quiz, essay
+  dueDate      DateTime @map("due_date")
+  maxScore     Int      @default(10) @map("max_score")
+  status       String   @default("ACTIVE") // ACTIVE, CLOSED, DRAFT
+  questions    String?  @default("[]") // JSON array of quiz questions (SQLite stores as String)
+  timeLimit    Int?     @map("time_limit") // minutes for quiz
+  essayPrompt  String?  @map("essay_prompt")
+  answerKey    String?  @map("answer_key")
+  gradingMode  String   @default("manual") @map("grading_mode") // manual, ai
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  school       School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class        Class    @relation(fields: [classId], references: [id])
+  subject      Subject  @relation(fields: [subjectId], references: [id])
+  teacher      User     @relation("homeworkTeacher", fields: [teacherId], references: [id])
+  submissions  HomeworkSubmission[]
+
+  @@index([schoolId, classId])
+  @@index([teacherId])
+  @@map("homework")
+}
+
+model HomeworkSubmission {
+  id           String    @id @default(uuid())
+  homeworkId   String    @map("homework_id")
+  studentId    String    @map("student_id")
+  type         String    // quiz, essay
+  quizAnswers  String?   @map("quiz_answers")  // JSON: { questionId: selectedIndex }
+  quizDetail   String?   @map("quiz_detail")   // JSON: array of { questionId, correct, selected, correctIndex, points }
+  essayContent String?   @map("essay_content")
+  score        Int?
+  maxScore     Int       @default(10) @map("max_score")
+  feedback     String?
+  status       String    @default("SUBMITTED") // SUBMITTED, GRADED, AI_GRADED
+  submittedAt  DateTime  @default(now()) @map("submitted_at")
+  gradedAt     DateTime? @map("graded_at")
+
+  homework     Homework  @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  student      Student   @relation(fields: [studentId], references: [id])
+
+  @@unique([homeworkId, studentId])
+  @@index([studentId])
+  @@map("homework_submissions")
+}

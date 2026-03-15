@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+dist
+build
+coverage
+.nyc_output
+.pnpm-store
+.pnpm
+.git
+.gitignore
+Dockerfile*
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.env

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "814774103838",
+    "project_id": "reilferems",
+    "storage_bucket": "reilferems.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:814774103838:android:cbfe6478292147b0d2e30f",
+        "android_client_info": {
+          "package_name": "com.reilfer.emspr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAgry9IzbmUxFS5EnjU1YvO-hBSbexiaEQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

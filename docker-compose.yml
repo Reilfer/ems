@@ -1,0 +1,101 @@
+# ══════════════════════════════════════════════════════════════
+# ReilferEDUV — Docker Compose (Full Stack)
+# Chạy: docker-compose up --build
+# ══════════════════════════════════════════════════════════════
+
+version: '3.9'
+
+services:
+  # ── PostgreSQL Database ──
+  postgres:
+    image: postgres:16-alpine
+    container_name: eduv-postgres
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ems_db
+      POSTGRES_USER: ems_user
+      POSTGRES_PASSWORD: ems_password_2026
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/seeds/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ems_user -d ems_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ── Redis (Cache + Queue) ──
+  redis:
+    image: redis:7-alpine
+    container_name: eduv-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # ── Unified Backend Service (All-in-one NestJS) ──
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: eduv-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      DATABASE_URL: postgresql://ems_user:ems_password_2026@postgres:5432/ems_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: eduv-docker-jwt-secret-2026
+      JWT_REFRESH_SECRET: eduv-docker-refresh-secret-2026
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ── Admin Web Frontend (React + Nginx) ──
+  admin:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.admin
+    container_name: eduv-admin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # ── Parent Portal (React + Nginx) ──
+  parent-portal:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.parent
+    container_name: eduv-parent
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+    driver: local

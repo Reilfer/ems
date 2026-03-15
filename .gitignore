@@ -1,0 +1,83 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Build
+dist/
+build/
+.next/
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Database
+*.sqlite
+*.db
+pgdata/
+
+# Docker
+docker-compose.override.yml
+
+# Testing
+coverage/
+.nyc_output/
+.pytest_cache/
+htmlcov/
+
+# Prisma
+prisma/*.db
+prisma/migrations/**/migration_lock.toml
+
+# Media uploads
+uploads/
+temp/
+
+# Secrets
+*.pem
+*.key
+*.cert
+
+# Flutter / Mobile
+mobile/ems_mobile/.dart_tool/
+mobile/ems_mobile/.flutter-plugins
+mobile/ems_mobile/.flutter-plugins-dependencies
+mobile/ems_mobile/build/
+mobile/ems_mobile/android/.gradle/
+mobile/ems_mobile/android/app/build/
+mobile/ems_mobile/ios/Pods/
+mobile/ems_mobile/ios/.symlinks/
+mobile/ems_mobile/.packages
+*.iml
+
+# Agent / Dev tools
+.agent/
+.agents/
+_agent/
+_agents/
+
+# Temp / test
+test_login.js
+/tmp/
+

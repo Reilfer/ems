@@ -1,0 +1,30 @@
+packages:
+  - services/auth
+  - services/student
+  - services/grade
+  - services/finance
+  - services/notification
+  - services/media
+  - services/schedule
+  - services/hr
+  - services/enrollment
+  - services/exam
+  - services/assignment
+  - services/asset
+  - services/workflow
+  - services/gateway
+  - services/unified
+  - services/shared
+  - frontend/admin
+  - frontend/parent-portal
+  - frontend/mobile
+  - frontend/desktop
+  - shared/types
+  - shared/crypto
+  - shared/utils
+  - database/prisma
+
+onlyBuiltDependencies:
+  - '@prisma/engines'
+  - bcrypt
+  - prisma

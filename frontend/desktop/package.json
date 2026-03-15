@@ -1,0 +1,17 @@
+{
+    "name": "@eduv/desktop",
+    "version": "1.0.0",
+    "private": true,
+    "description": "ReilferEDUV - Desktop App (Electron)",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "dev": "cross-env NODE_ENV=development wait-on http://localhost:5173 && electron ."
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "cross-env": "^7.0.3",
+        "electron": "^30.0.0",
+        "wait-on": "^7.2.0"
+    }
+}

@@ -1,0 +1,41 @@
+# ══════════════════════════════════════════════
+# Dockerfile — Unified Backend (NestJS)
+# ══════════════════════════════════════════════
+
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy toàn bộ monorepo (unified cần import từ các service khác)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json ./
+COPY services/ ./services/
+COPY shared/ ./shared/
+COPY database/prisma/ ./database/prisma/
+
+# Install pnpm + dependencies
+RUN npm i -g pnpm@9 && \
+    cd services/unified && pnpm install --frozen-lockfile
+
+# Generate Prisma Client
+RUN cd database/prisma && npx prisma generate
+
+# Build unified service
+RUN cd services/unified && npx nest build
+
+# ── Production Stage ──
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Copy built output + deps
+COPY --from=builder /app/services/unified/dist/ ./dist/
+COPY --from=builder /app/services/unified/node_modules/ ./node_modules/
+COPY --from=builder /app/services/unified/package.json ./
+COPY --from=builder /app/database/prisma/ ./prisma/
+
+# curl for health check
+RUN apk add --no-cache curl
+
+EXPOSE 3000
+
+CMD ["node", "dist/unified/src/main.js"]

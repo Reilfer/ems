@@ -1,0 +1,46 @@
+{
+    "expo": {
+        "name": "ReilferEDUV",
+        "slug": "reilfereduv",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "icon": "./assets/icon.png",
+        "scheme": "eduv",
+        "userInterfaceStyle": "automatic",
+        "splash": {
+            "image": "./assets/splash.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#1a1a2e"
+        },
+        "assetBundlePatterns": [
+            "**/*"
+        ],
+        "ios": {
+            "supportsTablet": true,
+            "bundleIdentifier": "com.reilfer.eduv",
+            "infoPlist": {
+                "NSCameraUsageDescription": "Camera dùng để điểm danh bằng nhận diện khuôn mặt",
+                "NSFaceIDUsageDescription": "Face ID dùng để đăng nhập nhanh"
+            }
+        },
+        "android": {
+            "adaptiveIcon": {
+                "foregroundImage": "./assets/adaptive-icon.png",
+                "backgroundColor": "#1a1a2e"
+            },
+            "package": "com.reilfer.eduv",
+            "permissions": [
+                "android.permission.CAMERA",
+                "android.permission.USE_BIOMETRIC",
+                "android.permission.RECEIVE_BOOT_COMPLETED"
+            ]
+        },
+        "plugins": [
+            "expo-router",
+            "expo-camera",
+            "expo-notifications",
+            "expo-secure-store",
+            "expo-local-authentication"
+        ]
+    }
+}
